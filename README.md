@@ -1,3 +1,4 @@
+> ⚠ ⚠ Aktif olarak kullanabileceğim bir ticari hesabım olmadığı için geliştirmeye devam edemiyorum. Hata vs. gibi durumlarda destek olurken yalnızca test modunda deneyip sonuç alabildiğim konular için yardımcı olabileceğim.
 # Nedir?
 
 - ## Bu paket Fatih Kadir Akın'ın [bu reposundan](https://github.com/f/fatura) esinlenilerek, aşağıdaki gibi SSL/TLS hatasının çözülmüş hali olarak geliştirilmiştir.
@@ -21,6 +22,10 @@
 
 # Fonksiyonlar
 
+- Aşağıdaki tabloda arka planı kırmızı olan fonksiyonlar şu anda çalışmamaktadır.
+- Çalışmama sebebini ben de bilmiyorum, earsiv test sitesinden denediğimde orada da çalışmadıklarını gördüm, dolayısıyla yapabileceğim bir şey yok.
+- Çözüm bulabilirsem editleyeceğim. :)
+- <a href="https://earsivportaltest.efatura.gov.tr/earsiv-services">Test Adresi</a>
 <table>
 <thead>
 
@@ -59,7 +64,7 @@
         <td>getAllDocuments</td>
         <td>01/01/2020 tarihinden itibaren oluşturulmuş bütün dükmanları getirir.</td>
     </tr>
-    <tr>
+    <tr style="background-color: #a00">
         <td>getAllIssuedToMe</td>
         <td>Başlangıç ve bitiş tarihlerini parametre olarak alır ve o tarihler arasında adınıza kesilen belgeleri döndürür. Varsayılan tarih aralığı: 01/01/2022 - 31/12/2023</td>
     </tr>
@@ -77,7 +82,7 @@
 
 # ÖNEMLİ
 
-> Bu paket [adresindeki](https://github.com/f/fatura) SSL sorununu çözmek için, aynı linkten esinlenilerek oluşturulmuştur.
+> Bu paket [Fatih Kadir Akın'ın bu adresindeki](https://github.com/f/fatura) SSL sorununu çözmek için, aynı linkten esinlenilerek oluşturulmuştur.
 
 ---
 

@@ -34,14 +34,14 @@ class Fatura {
   }
 
   async setTestCredentials() {
-    const userid = await this.suggestUser();
-    this.userId = userid;
+    this.userId = await this.suggestUser();
     this.password = 1;
+    return this.getCredentials();
   }
 
   async suggestUser() {
     const res = await axios.post(
-      `${this.urls[this.mode]}/esign?assoscmd=kullaniciOner&rtype=json`
+      `${this.urls[this.mode]}/esign?assoscmd=kullaniciOner&rtype=json`,
     );
     return res.data.userid;
   }
@@ -65,7 +65,7 @@ class Fatura {
         sifre2: this.password,
         parola: 1,
       },
-      this.getHeaders()
+      this.getHeaders(),
     );
     this.setToken(response.data.token);
     return this;
@@ -79,7 +79,7 @@ class Fatura {
           assoscmd: "logout",
           token: this.token,
         },
-        this.getHeaders()
+        this.getHeaders(),
       )
       .then(() => {
         this.userId = "";
@@ -97,7 +97,7 @@ class Fatura {
         cmd: "EARSIV_PORTAL_KULLANICI_BILGILERI_GETIR",
         pageName: "RG_KULLANICI",
       },
-      this.getHeaders()
+      this.getHeaders(),
     );
 
     return response.data;
@@ -116,10 +116,10 @@ class Fatura {
             baslangic: "01/01/2020",
             bitis: new Date().toLocaleDateString("tr-TR"),
             hangiTip: "Buyuk",
-          } || {}
+          } || {},
         ),
       },
-      this.getHeaders()
+      this.getHeaders(),
     );
     return response.data;
   }
@@ -138,11 +138,12 @@ class Fatura {
             bitis: bitis || "31/12/2023",
             hangiTip: "5000/30000",
             table: [],
-          } || {}
+          } || {},
         ),
       },
-      this.getHeaders()
+      this.getHeaders(),
     );
+    console.log(response);
     return response.data;
   }
 
@@ -157,13 +158,84 @@ class Fatura {
           {
             ettn: faturaUuid,
             onayDurumu: onayDurumu ? "Onaylandı" : "Onaylanmadı",
-          } || {}
+          } || {},
         ),
       },
-      this.getHeaders()
+      this.getHeaders(),
     );
 
     return response.data;
+  }
+
+  createInvoiceObject(fiyat, kdvOrani) {
+    return {
+      malHizmetTable: [
+        {
+          malHizmet: "X Ürünü",
+          miktar: 1,
+          birim: "C62",
+          birimFiyat: fiyat,
+          kdvOrani: kdvOrani,
+          fiyat: fiyat,
+          iskontoArttm: "Iskonto",
+          iskontoOrani: 0,
+          iskontoTutari: 0,
+          iskontoNedeni: "",
+          malHizmetTutari: fiyat,
+          kdvTutari: fiyat * kdvOrani,
+          tevkifatKodu: 0,
+          ozelMatrahNedeni: 0,
+          ozelMatrahTutari: 0,
+          gtip: "",
+        },
+      ],
+      faturaUuid: this.getNewUuid(),
+      faturaTarihi: new Date().toLocaleDateString("tr-TR").replace(/\./g, "/"),
+      saat: new Date().toLocaleTimeString("tr-TR"),
+      vknTckn: "11111111111",
+      aliciAdi: "Ugur",
+      aliciSoyadi: "Gunes",
+      mahalleSemtIlce: "Uskudar",
+      sehir: "İstanbul",
+      ulke: "Turkiye",
+      hangiTip: "5000/30000",
+      belgeNumarasi: "",
+      paraBirimi: "TRY",
+      dovzTLkur: "",
+      faturaTipi: "SATIS",
+      siparisNumarasi: "",
+      siparisTarihi: "",
+      irsaliyeNumarasi: "",
+      irsaliyeTarihi: "",
+      fisNo: "",
+      fisTarihi: "",
+      fisSaati: "",
+      fisTipi: "",
+      zRaporNo: "",
+      okcSeriNo: "",
+      aliciUnvan: "Y Insaat Malzemeleri San. Tic. Ltd. Sti.",
+      bulvarcaddesokak: "Izmir Yolu Cd. No:212/B",
+      binaAdi: "",
+      binaNo: "",
+      kapiNo: "",
+      kasabaKoy: "",
+      postaKodu: "",
+      tel: "",
+      fax: "",
+      eposta: "",
+      websitesi: "",
+      vergiDairesi: "Cekirge VD",
+      iadeTable: [],
+      not: "",
+      matrah: fiyat,
+      malhizmetToplamTutari: fiyat,
+      toplamIskonto: 0,
+      hesaplanankdv: fiyat * 0.18,
+      vergilerToplami: fiyat * 0.18,
+      vergilerDahilToplamTutar: fiyat + fiyat * 0.18,
+      toplamMasraflar: 0,
+      odenecekTutar: fiyat + fiyat * 0.18,
+    };
   }
 
   async createDraft(faturaBilgileri) {
@@ -175,7 +247,7 @@ class Fatura {
         pageName: "RG_BASITFATURA",
         jp: JSON.stringify(faturaBilgileri || {}),
       },
-      this.getHeaders()
+      this.getHeaders(),
     );
   }
 
