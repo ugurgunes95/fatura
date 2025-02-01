@@ -15,5 +15,9 @@
     "crypto": "^1.0.1",
     "dotenv": "^16.0.3",
     "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.10",
+    "typescript": "^5.7.3"
   }
 }

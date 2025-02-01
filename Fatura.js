@@ -1,277 +1,82 @@
-require("dotenv").config();
-const crypto = require("crypto");
-const https = require("https");
-const axios = require("axios");
-const { v4: uuid } = require("uuid");
-
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, state, kind, f) {
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
+    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+};
+var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
+    if (kind === "m") throw new TypeError("Private method is not writable");
+    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
+    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
+    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
+};
+var _a, _Fatura_instance;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.EnvUrl = void 0;
+var EnvUrl;
+(function (EnvUrl) {
+    EnvUrl["TEST"] = "https://earsivportaltest.efatura.gov.tr/earsiv-services";
+    EnvUrl["PROD"] = "https://earsivportal.efatura.gov.tr/earsiv-services";
+})(EnvUrl || (exports.EnvUrl = EnvUrl = {}));
 class Fatura {
-  constructor() {
-    this.userId = "";
-    this.password = "";
-    this.token = "";
-    this.mode = "PROD";
-    this.assoscmd = "anologin";
-    this.urls = {
-      TEST: "https://earsivportaltest.efatura.gov.tr/earsiv-services",
-      PROD: "https://earsivportal.efatura.gov.tr/earsiv-services",
-    };
-  }
-
-  enableTestMode() {
-    this.mode = "TEST";
-    this.assoscmd = "login";
-    return this;
-  }
-
-  async setCredentials(userId, password) {
-    this.userId = userId;
-    this.password = password;
-    return this;
-  }
-
-  getCredentials() {
-    return `*********************************************************\n*\tUser ID: ${this.userId}, Password: ${this.password}\t\t\t*\n*********************************************************`;
-  }
-
-  async setTestCredentials() {
-    this.userId = await this.suggestUser();
-    this.password = 1;
-    return this.getCredentials();
-  }
-
-  async suggestUser() {
-    const res = await axios.post(
-      `${this.urls[this.mode]}/esign?assoscmd=kullaniciOner&rtype=json`,
-    );
-    return res.data.userid;
-  }
-
-  setToken(token) {
-    this.token = token;
-    return this;
-  }
-
-  getToken() {
-    return this.token;
-  }
-
-  async login() {
-    const response = await axios.post(
-      `${this.urls[this.mode]}/assos-login`,
-      {
-        assoscmd: this.assoscmd,
-        userid: this.userId,
-        sifre: this.password,
-        sifre2: this.password,
-        parola: 1,
-      },
-      this.getHeaders(),
-    );
-    this.setToken(response.data.token);
-    return this;
-  }
-
-  async logout() {
-    await axios
-      .post(
-        `${this.urls[this.mode]}/assos-login`,
-        {
-          assoscmd: "logout",
-          token: this.token,
-        },
-        this.getHeaders(),
-      )
-      .then(() => {
-        this.userId = "";
-        this.password = "";
-        this.token = "";
-      });
-    return this;
-  }
-
-  async getUserData() {
-    const response = await axios.post(
-      `${this.urls[this.mode]}/dispatch`,
-      {
-        token: this.token,
-        cmd: "EARSIV_PORTAL_KULLANICI_BILGILERI_GETIR",
-        pageName: "RG_KULLANICI",
-      },
-      this.getHeaders(),
-    );
-
-    return response.data;
-  }
-
-  async getAllDocuments() {
-    const response = await axios.post(
-      `${this.urls[this.mode]}/dispatch`,
-      {
-        callid: this.getNewUuid(),
-        token: this.token,
-        cmd: "EARSIV_PORTAL_TASLAKLARI_GETIR",
-        pageName: "RG_TASLAKLAR",
-        jp: JSON.stringify(
-          {
-            baslangic: "01/01/2020",
-            bitis: new Date().toLocaleDateString("tr-TR"),
-            hangiTip: "Buyuk",
-          } || {},
-        ),
-      },
-      this.getHeaders(),
-    );
-    return response.data;
-  }
-
-  async getAllIssuedToMe(baslangic, bitis) {
-    const response = await axios.post(
-      `${this.urls[this.mode]}/dispatch`,
-      {
-        callid: this.getNewUuid(),
-        token: this.token,
-        cmd: "EARSIV_PORTAL_ADIMA_KESILEN_BELGELERI_GETIR",
-        pageName: "RG_ALICI_TASLAKLAR",
-        jp: JSON.stringify(
-          {
-            baslangic: baslangic || "01/01/2022",
-            bitis: bitis || "31/12/2023",
-            hangiTip: "5000/30000",
-            table: [],
-          } || {},
-        ),
-      },
-      this.getHeaders(),
-    );
-    console.log(response);
-    return response.data;
-  }
-
-  async getHTML(faturaUuid, onayDurumu = false) {
-    const response = await axios.post(
-      `${this.urls[this.mode]}/dispatch`,
-      {
-        token: this.token,
-        cmd: "EARSIV_PORTAL_FATURA_GOSTER",
-        pageName: "RG_TASLAKLAR",
-        jp: JSON.stringify(
-          {
-            ettn: faturaUuid,
-            onayDurumu: onayDurumu ? "Onaylandı" : "Onaylanmadı",
-          } || {},
-        ),
-      },
-      this.getHeaders(),
-    );
-
-    return response.data;
-  }
-
-  createInvoiceObject(fiyat, kdvOrani) {
-    return {
-      malHizmetTable: [
-        {
-          malHizmet: "X Ürünü",
-          miktar: 1,
-          birim: "C62",
-          birimFiyat: fiyat,
-          kdvOrani: kdvOrani,
-          fiyat: fiyat,
-          iskontoArttm: "Iskonto",
-          iskontoOrani: 0,
-          iskontoTutari: 0,
-          iskontoNedeni: "",
-          malHizmetTutari: fiyat,
-          kdvTutari: fiyat * kdvOrani,
-          tevkifatKodu: 0,
-          ozelMatrahNedeni: 0,
-          ozelMatrahTutari: 0,
-          gtip: "",
-        },
-      ],
-      faturaUuid: this.getNewUuid(),
-      faturaTarihi: new Date().toLocaleDateString("tr-TR").replace(/\./g, "/"),
-      saat: new Date().toLocaleTimeString("tr-TR"),
-      vknTckn: "11111111111",
-      aliciAdi: "Ugur",
-      aliciSoyadi: "Gunes",
-      mahalleSemtIlce: "Uskudar",
-      sehir: "İstanbul",
-      ulke: "Turkiye",
-      hangiTip: "5000/30000",
-      belgeNumarasi: "",
-      paraBirimi: "TRY",
-      dovzTLkur: "",
-      faturaTipi: "SATIS",
-      siparisNumarasi: "",
-      siparisTarihi: "",
-      irsaliyeNumarasi: "",
-      irsaliyeTarihi: "",
-      fisNo: "",
-      fisTarihi: "",
-      fisSaati: "",
-      fisTipi: "",
-      zRaporNo: "",
-      okcSeriNo: "",
-      aliciUnvan: "Y Insaat Malzemeleri San. Tic. Ltd. Sti.",
-      bulvarcaddesokak: "Izmir Yolu Cd. No:212/B",
-      binaAdi: "",
-      binaNo: "",
-      kapiNo: "",
-      kasabaKoy: "",
-      postaKodu: "",
-      tel: "",
-      fax: "",
-      eposta: "",
-      websitesi: "",
-      vergiDairesi: "Cekirge VD",
-      iadeTable: [],
-      not: "",
-      matrah: fiyat,
-      malhizmetToplamTutari: fiyat,
-      toplamIskonto: 0,
-      hesaplanankdv: fiyat * 0.18,
-      vergilerToplami: fiyat * 0.18,
-      vergilerDahilToplamTutar: fiyat + fiyat * 0.18,
-      toplamMasraflar: 0,
-      odenecekTutar: fiyat + fiyat * 0.18,
-    };
-  }
-
-  async createDraft(faturaBilgileri) {
-    return await axios.post(
-      `${this.urls[this.mode]}/dispatch`,
-      {
-        token: this.token,
-        cmd: "EARSIV_PORTAL_FATURA_OLUSTUR",
-        pageName: "RG_BASITFATURA",
-        jp: JSON.stringify(faturaBilgileri || {}),
-      },
-      this.getHeaders(),
-    );
-  }
-
-  getHeaders() {
-    return {
-      headers: {
-        accept: "*/*",
-        "accept-language": "tr,en-US;q=0.9,en;q=0.8",
-        "cache-control": "no-cache",
-        "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
-        pragma: "no-cache",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-origin",
-        proxy: false,
-      },
-      httpsAgent: new https.Agent({
-        secureOptions: crypto.constants.SSL_OP_LEGACY_SERVER_CONNECT,
-      }),
-    };
-  }
-
-  getNewUuid() {
-    return uuid();
-  }
+    constructor() {
+        this.userId = null;
+        this.password = null;
+        this.token = null;
+        this.mode = "TEST";
+        this.url = null;
+    }
+    static get instance() {
+        if (!__classPrivateFieldGet(_a, _a, "f", _Fatura_instance)) {
+            __classPrivateFieldSet(_a, _a, new _a(), "f", _Fatura_instance);
+        }
+        return __classPrivateFieldGet(_a, _a, "f", _Fatura_instance);
+    }
+    set currentMode(mode) {
+        this.mode = mode;
+    }
+    get currentMode() {
+        return this.mode;
+    }
+    set currentUrl(url) {
+        this.url = url;
+    }
+    get currentUrl() {
+        return this.url;
+    }
+    suggestuser() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.currentMode === "TEST") {
+                const data = new URLSearchParams();
+                data.append("assoscmd", "kullaniciOner");
+                data.append("rtype", "json");
+                return yield fetch(`${this.url}/esign`, {
+                    method: "POST",
+                    body: data,
+                })
+                    .then((res) => res.json())
+                    .then((res) => res.userid);
+            }
+            else {
+                return Promise.reject(new Error("It's available only in TEST mode!"));
+            }
+        });
+    }
+    login() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = new URLSearchParams();
+        });
+    }
 }
-
-module.exports = Fatura;
+_a = Fatura;
+_Fatura_instance = { value: void 0 };
+exports.default = Fatura;
